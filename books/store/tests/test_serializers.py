@@ -3,6 +3,7 @@ from store.models import Book
 from store.serializers import BookSerializer
 
 class BookSerializerTestCase(TestCase):
+    """Тестирование, верно ли работает сериализатор"""
     def test_ok(self):
         book1 = Book.objects.create(title='Test_book_1', price=25)
         book2 = Book.objects.create(title='Test_book_2', price=22)
