@@ -38,8 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    'django_filters',
+    'social_django',
+
     'store',
-    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -57,7 +59,7 @@ ROOT_URLCONF = 'books.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -86,6 +88,11 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.github.GithubOAuth2',
+    'django.contrib.auth.backends.ModelBackend', # дефолтная джанго аутентификация
+)
 
 
 # Password validation
@@ -138,3 +145,8 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
+
+SOCIAL_AUTH_JSONFIELD_ENABLED = True # хранение данных о пользователе в jsonfield
+
+SOCIAL_AUTH_GITHUB_KEY = 'Ov23litpYlfDbt4pBlXz'
+SOCIAL_AUTH_GITHUB_SECRET = 'b66b2e7c1a3ae153e94f8083167531274ccf3da2'
