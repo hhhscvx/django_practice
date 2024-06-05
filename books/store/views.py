@@ -1,10 +1,14 @@
 from django.shortcuts import render
-from rest_framework.viewsets import ModelViewSet
+
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from rest_framework.mixins import UpdateModelMixin
 from django_filters.rest_framework import DjangoFilterBackend
-from .permissions import IsOwnerOrStaffOrReadOnly
 from rest_framework.filters import SearchFilter, OrderingFilter
-from .models import Book
-from .serializers import BookSerializer
+from rest_framework.permissions import IsAuthenticated
+
+from .permissions import IsOwnerOrStaffOrReadOnly
+from .models import Book, UserBookRelation
+from .serializers import BookSerializer, UserBookRelationSerializer
 
 
 class BookViewSet(ModelViewSet):
@@ -19,6 +23,19 @@ class BookViewSet(ModelViewSet):
     def perform_create(self, serializer):
         serializer.validated_data['owner'] = self.request.user
         serializer.save()
+
+
+class UserBookRelationViewSet(UpdateModelMixin, GenericViewSet):
+    queryset = UserBookRelation.objects.all()
+    permission_classes = [IsAuthenticated]
+    serializer_class = UserBookRelationSerializer
+    lookup_field = 'book' # так просто /book/<pk>, а щас /book/<book>
+
+    def get_object(self): # переопределяем метод получения объекта
+        obj, created = UserBookRelation.objects.get_or_create(user=self.request.user,
+                                                        book_id=self.kwargs["book"]) # обращаемся из lookup_field
+        print(f'was created: {created}')
+        return obj # получили объект relation, получив айдишник book
 
 
 def auth(request):

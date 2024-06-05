@@ -21,6 +21,7 @@ from store import views
 router = SimpleRouter()
 
 router.register(r'book', views.BookViewSet)
+router.register(r'book-relation', views.UserBookRelationViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
