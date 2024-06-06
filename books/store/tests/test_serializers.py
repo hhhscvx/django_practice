@@ -9,11 +9,12 @@ class BookSerializerTestCase(TestCase):
     """Тестирование, верно ли работает сериализатор"""
 
     def test_ok(self):
-        user1 = User.objects.create(username="username1")
-        user2 = User.objects.create(username="username2")
-        user3 = User.objects.create(username="username3")
-        book1 = Book.objects.create(title='Test_book_1', price=25, author="author1", discount=4)
-        book2 = Book.objects.create(title='Test_book_2', price=22, author="author2")
+        user1 = User.objects.create(username="username1", first_name="Ivan", last_name="Petrov")
+        user2 = User.objects.create(username="username2", first_name="Ivan", last_name="Sidorov")
+        user3 = User.objects.create(username="username3", first_name="1", last_name="2")
+        book1 = Book.objects.create(title='Test_book_1', price=25,
+                                    author="author1", discount=4, owner=user1)
+        book2 = Book.objects.create(title='Test_book_2', price=22, author="author2", owner=user2)
 
         UserBookRelation.objects.create(book=book1, user=user1, like=True, rate=2)
         UserBookRelation.objects.create(book=book1, user=user2, like=True, rate=5)
@@ -29,7 +30,8 @@ class BookSerializerTestCase(TestCase):
             price_with_discount=(F('price') - F('discount')),
             rating=Avg('userbookrelation__rate'),
             min_rate=Min('userbookrelation__rate'),
-            max_rate=Max('userbookrelation__rate')
+            max_rate=Max('userbookrelation__rate'),
+            owner_name=F('owner__username')
         ).order_by("id")
         data = BookSerializer(books, many=True).data
         expected_data = [
@@ -40,12 +42,30 @@ class BookSerializerTestCase(TestCase):
                 'author': 'author1',
                 'discount': '4.00',
                 'price_with_discount': '21.00',
-                'likes_count': 3,
                 'annotated_likes': 3,
                 'min_rate': 2,
                 'max_rate': 5,
                 'rating': '4.00',
                 'in_bookmarks_count': 0,
+                'owner_name': 'username1',
+                'readers': [
+                    {
+                        'first_name': 'Ivan',
+                        'last_name': 'Petrov',
+                    },
+                    {
+                        'first_name': 'Ivan',
+                        'last_name': 'Sidorov',
+                    },
+                    {
+                        'first_name': '1',
+                        'last_name': '2',
+                    },
+                    {
+                        'first_name': 'Ivan',
+                        'last_name': 'Petrov',
+                    },
+                ]
             },
             {
                 'id': book2.id,
@@ -54,12 +74,22 @@ class BookSerializerTestCase(TestCase):
                 'author': 'author2',
                 'discount': '0.00',
                 'price_with_discount': '22.00',
-                'likes_count': 2,
                 'annotated_likes': 2,
                 'min_rate': 3,
                 'max_rate': 4,
                 'rating': '3.50',
-                'in_bookmarks_count': 0
+                'in_bookmarks_count': 0,
+                'owner_name': 'username2',
+                'readers': [
+                    {
+                        'first_name': 'Ivan',
+                        'last_name': 'Sidorov',
+                    },
+                    {
+                        'first_name': '1',
+                        'last_name': '2',
+                    }
+                ]
             }
         ]
         print(f'data: {data}')

@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'django_filters',
     'social_django',
 
@@ -91,7 +91,7 @@ DATABASES = {
 
 AUTHENTICATION_BACKENDS = (
     'social_core.backends.github.GithubOAuth2',
-    'django.contrib.auth.backends.ModelBackend', # дефолтная джанго аутентификация
+    'django.contrib.auth.backends.ModelBackend',  # дефолтная джанго аутентификация
 )
 
 
@@ -146,7 +146,22 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
 
-SOCIAL_AUTH_JSONFIELD_ENABLED = True # хранение данных о пользователе в jsonfield
+SOCIAL_AUTH_JSONFIELD_ENABLED = True  # хранение данных о пользователе в jsonfield
 
 SOCIAL_AUTH_GITHUB_KEY = 'Ov23litpYlfDbt4pBlXz'
 SOCIAL_AUTH_GITHUB_SECRET = 'b66b2e7c1a3ae153e94f8083167531274ccf3da2'
+
+INTERNAL_IPS = [
+    '127.0.0.1'
+]
+
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
+if DEBUG and not os.getenv('TESTING', 'False') == 'True':
+    INSTALLED_APPS += [
+        'debug_toolbar',
+    ]
+    MIDDLEWARE += [
+        'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'debug_toolbar_force.middleware.ForceDebugToolbarMiddleware',
+    ]

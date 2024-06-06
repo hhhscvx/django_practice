@@ -1,5 +1,6 @@
 from django.shortcuts import render
-from django.db.models import Count, Case, When, Avg, F
+from django.db.models import Count, Case, When, Avg, F, Prefetch
+from django.contrib.auth.models import User
 
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework.mixins import UpdateModelMixin
@@ -16,7 +17,9 @@ class BookViewSet(ModelViewSet):
     queryset = Book.objects.all().annotate(  # annotate это весь запрос + поле annotated_likes
         annotated_likes=Count(Case(When(userbookrelation__like=True, then=1))),
         rating=Avg('userbookrelation__rate'),
-        price_with_discount=(F('price') - F('discount')),).order_by("id")
+        price_with_discount=(F('price') - F('discount')),
+        owner_name=F('owner__username')).prefetch_related(
+            Prefetch('readers', queryset=User.objects.all().only('first_name', 'last_name'))).order_by("id")
     serializer_class = BookSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     permission_classes = [IsOwnerOrStaffOrReadOnly]
