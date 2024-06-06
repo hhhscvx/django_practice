@@ -10,6 +10,7 @@ class Book(models.Model):
                               null=True, related_name="my_books")  # user.my_books
     readers = models.ManyToManyField(User, related_name="books",
                                      through="UserBookRelation")  # through - модель отношения между полями
+    discount = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
 
     def __str__(self):
         return f"{self.title}: {self.price}₽"
