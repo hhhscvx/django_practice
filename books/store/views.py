@@ -16,7 +16,6 @@ from .serializers import BookSerializer, UserBookRelationSerializer
 class BookViewSet(ModelViewSet):
     queryset = Book.objects.all().annotate(  # annotate это весь запрос + поле annotated_likes
         annotated_likes=Count(Case(When(userbookrelation__like=True, then=1))),
-        rating=Avg('userbookrelation__rate'),
         price_with_discount=(F('price') - F('discount')),
         owner_name=F('owner__username')).prefetch_related(
             Prefetch('readers', queryset=User.objects.all().only('first_name', 'last_name'))).order_by("id")

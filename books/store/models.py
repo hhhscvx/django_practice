@@ -11,6 +11,7 @@ class Book(models.Model):
     readers = models.ManyToManyField(User, related_name="books",
                                      through="UserBookRelation")  # through - модель отношения между полями
     discount = models.DecimalField(max_digits=7, decimal_places=2, default=0.00)
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=None, null=True)
 
     def __str__(self):
         return f"{self.title}: {self.price}₽"
@@ -34,3 +35,16 @@ class UserBookRelation(models.Model):  # лайки, закладки
 
     def __str__(self):
         return f"{self.user.username}: {self.book.title}, RATE {self.rate}"
+
+    def __init__(self, *args, **kwargs):
+        super(UserBookRelation, self).__init__(*args, **kwargs)
+        self.old_rate = self.rate
+
+    def save(self, *args, **kwargs):
+        create = not self.pk
+
+        super().save(*args, **kwargs)
+
+        if self.old_rate != self.rate or create:
+            from store.services import set_rating
+            set_rating(self.book)

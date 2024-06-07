@@ -3,24 +3,29 @@ from store.models import Book, UserBookRelation
 from store.serializers import BookSerializer
 from django.contrib.auth.models import User
 from django.db.models import Count, Case, When, Avg, Min, Max, F
+from unittest.mock import patch
 
 
 class BookSerializerTestCase(TestCase):
     """Тестирование, верно ли работает сериализатор"""
 
     def test_ok(self):
-        user1 = User.objects.create(username="username1", first_name="Ivan", last_name="Petrov")
+        self.user1 = User.objects.create(username="username1", first_name="Ivan", last_name="Petrov")
         user2 = User.objects.create(username="username2", first_name="Ivan", last_name="Sidorov")
         user3 = User.objects.create(username="username3", first_name="1", last_name="2")
-        book1 = Book.objects.create(title='Test_book_1', price=25,
-                                    author="author1", discount=4, owner=user1)
+        self.book1 = Book.objects.create(title='Test_book_1', price=25,
+                                    author="author1", discount=4, owner=self.user1)
         book2 = Book.objects.create(title='Test_book_2', price=22, author="author2", owner=user2)
 
-        UserBookRelation.objects.create(book=book1, user=user1, like=True, rate=2)
-        UserBookRelation.objects.create(book=book1, user=user2, like=True, rate=5)
-        UserBookRelation.objects.create(book=book1, user=user3, like=True, rate=5)
+        UserBookRelation.objects.create(book=self.book1, user=self.user1, like=True, rate=2)
+        UserBookRelation.objects.create(book=self.book1, user=user2, like=True, rate=5)
+        UserBookRelation.objects.create(book=self.book1, user=user3, like=True, rate=5)
 
-        UserBookRelation.objects.create(book=book1, user=user1, like=False)
+        user_book_3 = UserBookRelation.objects.create(book=self.book1, user=user3, like=True)
+        user_book_3.rate = 4
+        user_book_3.save()
+
+        UserBookRelation.objects.create(book=self.book1, user=self.user1, like=False)
         UserBookRelation.objects.create(book=book2, user=user2, like=True, rate=3)
         UserBookRelation.objects.create(book=book2, user=user3, like=True, rate=4)
 
@@ -28,7 +33,6 @@ class BookSerializerTestCase(TestCase):
             annotated_likes=Count(Case(When(userbookrelation__like=True, then=1))),
             in_bookmarks_count=Count(Case(When(userbookrelation__in_bookmarks=True, then=1))),
             price_with_discount=(F('price') - F('discount')),
-            rating=Avg('userbookrelation__rate'),
             min_rate=Min('userbookrelation__rate'),
             max_rate=Max('userbookrelation__rate'),
             owner_name=F('owner__username')
@@ -36,13 +40,13 @@ class BookSerializerTestCase(TestCase):
         data = BookSerializer(books, many=True).data
         expected_data = [
             {
-                'id': book1.id,
+                'id': self.book1.id,
                 'title': 'Test_book_1',
                 'price': '25.00',
                 'author': 'author1',
                 'discount': '4.00',
                 'price_with_discount': '21.00',
-                'annotated_likes': 3,
+                'annotated_likes': 4,
                 'min_rate': 2,
                 'max_rate': 5,
                 'rating': '4.00',
@@ -56,6 +60,10 @@ class BookSerializerTestCase(TestCase):
                     {
                         'first_name': 'Ivan',
                         'last_name': 'Sidorov',
+                    },
+                    {
+                        'first_name': '1',
+                        'last_name': '2',
                     },
                     {
                         'first_name': '1',
@@ -95,3 +103,21 @@ class BookSerializerTestCase(TestCase):
         print(f'data: {data}')
         print(f'expected_data: {expected_data}')
         self.assertEqual(expected_data, data)
+
+
+    @patch('store.services.set_rating')
+    def test_set_rating_not_called(self, mock_set_rating):
+        """Хз как в тестах сделать проверку, в которой was_create не будет равен True"""
+        user = User.objects.create(username='vasya')
+        book = Book.objects.create(title='Test_set_rating_book', price=25, author='asd', discount=4)
+        relation = UserBookRelation(user=user, book=book, rate=3)
+        
+        relation.rate = 4
+        relation.save()
+
+        mock_set_rating.assert_called_once_with(book)
+
+        relation.rate = 3
+        relation.save()
+
+        mock_set_rating.assert_not_called()
